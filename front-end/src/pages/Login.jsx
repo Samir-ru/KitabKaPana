@@ -4,17 +4,42 @@ import { useNavigate } from 'react-router-dom'
 function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    // placeholder auth - replace with real logic
-    if (username === 'user' && password === 'pass') {
-      setError('')
-      navigate('/home')
-    } else {
-      setError('Invalid username or password')
+    setIsLoading(true)
+    setError('')
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          username,
+          password,
+          rememberMe
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed')
+      }
+
+      // Redirect based on user role
+      navigate(data.user.role === 'admin' ? '/admin' : '/home')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -54,6 +79,19 @@ function Login() {
             />
           </div>
 
+          <div className="flex items-center">
+            <input
+              id="remember"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-zinc-700 bg-zinc-800/50 text-zinc-600 focus:ring-zinc-600"
+            />
+            <label htmlFor="remember" className="ml-2 block text-sm text-zinc-300">
+              Remember me
+            </label>
+          </div>
+
           {error && (
             <div className="text-sm text-red-400 bg-red-900/10 border border-red-900/50 px-3 py-2 rounded">
               {error}
@@ -62,9 +100,10 @@ function Login() {
 
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium rounded-lg border border-zinc-700 transition-colors duration-200"
+            disabled={isLoading}
+            className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium rounded-lg border border-zinc-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign in
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 

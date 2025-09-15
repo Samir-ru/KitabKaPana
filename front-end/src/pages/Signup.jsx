@@ -13,7 +13,9 @@ function Signup() {
     return digits.length >= 7 && digits.length <= 15
   }
 
-  function handleSubmit(e) {
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!username.trim()) {
       setError('Username is required')
@@ -28,9 +30,35 @@ function Signup() {
       return
     }
 
-    // placeholder signup - replace with real API call
+    setIsLoading(true)
     setError('')
-    navigate('/home')
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          username,
+          phone,
+          password
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed')
+      }
+
+      navigate('/home')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -91,9 +119,10 @@ function Signup() {
 
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium rounded-lg border border-zinc-700 transition-colors duration-200"
+            disabled={isLoading}
+            className="w-full py-2 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium rounded-lg border border-zinc-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create account
+            {isLoading ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 
